@@ -1,0 +1,23 @@
+{
+    "name":"my_recipe",
+    "pours": [
+        {
+            "min": 0,
+            "sec": 0,
+            "target": 50,
+            "note": "Open Switch"
+        },
+        {
+            "min": 0,
+            "sec": 30,
+            "target": 150,
+            "note": "Fast pouring"
+        },
+        {
+            "min": 1,
+            "sec": 0,
+            "target": 200,
+            "note": ""
+        }
+    ]
+}
