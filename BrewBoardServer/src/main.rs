@@ -1,4 +1,4 @@
-use axum::extract::{Query, Multipart, State};
+use axum::extract::{Query, State};
 use axum_extra::extract::{Form};
 use axum::response::{Html, Redirect};
 use axum::routing::{get};
@@ -38,7 +38,6 @@ async fn main() {
         .route("/", get(get_root))
         .route("/pour_question", get(get_pour_question))
         .route("/manual_recipe", get(get_manual_recipe).post(accept_new_manual_recipe))
-        .route("/json_recipe", get(get_json_recipe).post(accept_json_recipe))
         .with_state(state);
 
     // run it
@@ -57,9 +56,6 @@ async fn get_root() -> Html<&'static str> {
             <body>
                 <p>
                     <a href="/pour_question"><button class="button">Manual Recipe</button></a>
-                </p>
-                <p>
-                    <a href="/json_recipe"><button class="button">JSON Recipe</button></a>
                 </p>
                 <p>
                     <a href="/recipe_list"><button class="button">List of Recipes</button></a>
@@ -144,21 +140,6 @@ async fn get_manual_recipe(Query(q): Query<PourQuestionInput>) -> Html<String> {
 }
 
 
-async fn get_json_recipe() -> Html<&'static str> {
-    Html(
-        r#"
-        <!DOCTYPE html>
-        <html>
-            <form method="POST" enctype="multipart/form-data">
-                <input type="file" name="file" accept="application/json">
-                <input type="submit" value="Save">
-            </form>
-        </html>
-        "#
-    )
-}
-
-
 #[derive(Debug, Deserialize, Clone)]
 #[allow(dead_code)]
 struct ManualRecipe {
@@ -209,6 +190,7 @@ async fn accept_new_manual_recipe(State(state): State<AppState>, Form(manual_rec
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 struct Pour {
     min: i32,
     sec: i32,
@@ -216,25 +198,11 @@ struct Pour {
     note: String
 }
 
+
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 struct Recipe {
     name: String,
     pours: Vec<Pour>
 }
 
-
-
-
-async fn accept_json_recipe(State(state): State<AppState>, mut multipart: Multipart) -> Redirect {
-    while let Some(field) = multipart.next_field().await.unwrap() {
-        if field.name() == Some("file") {
-            let data = field.bytes().await.unwrap();
-
-            let parsed: Recipe = serde_json::from_slice(&data).unwrap();
-
-            ManualRecipe::from_recipe(parsed).insert_into_database(&state).await;
-        }
-    }
-
-    Redirect::to("/")
-}
