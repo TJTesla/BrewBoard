@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            .button-row {
+                display: flex;
+                width: 100%;
+                gap: 10px;
+            }
+
+            .button-row button {
+                flex: 1;
+                padding: 10px;
+                font-size: 16px;
+            }
+
+            .bottom-space {
+                margin-bottom: 20px;
+            }
+        </style>
+    </head>
+    <body style="font-size: 100%;">
+        <ul>
+            <li class="bottom-space">
+                Ganz tolles Rezept, Brewcount: 129
+                <form>
+                    <div class="button-row">
+                        <button style="flex:1; gap: 20p;" type="submit" formaction="/recipe_list/descr?id=2" formmethod="post">
+                            Description
+                        </button>
+                        <button style="flex:1; gap: 20p;" type="submit" formaction="/recipe_list/edit?id=2" formmethod="post">
+                            Edit
+                        </button>
+                        <button style="flex:1; gap: 20p;" type="submit" formaction="/recipe_list/delete?id=2" formmethod="post">
+                            Delete
+                        </button>
+                    </div>
+                </form>
+            </li>
+            <li>
+                Nicht so gutes Rezept, Brewcount: 67
+                <form>
+                    <div class="button-row">
+                        <button style="flex:1; gap: 20p;" type="submit" formaction="/recipe_list/descr?id=2" formmethod="post">
+                            Description
+                        </button>
+                        <button style="flex:1; gap: 20p;" type="submit" formaction="/recipe_list/edit?id=2" formmethod="post">
+                            Edit
+                        </button>
+                        <button style="flex:1; gap: 20p;" type="submit" formaction="/recipe_list/delete?id=2" formmethod="post">
+                            Delete
+                        </button>
+                    </div>
+                </form>
+            </li>
+        </ul>
+    </body>
+</html>
