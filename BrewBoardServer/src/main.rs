@@ -257,7 +257,7 @@ async fn get_recipe_list(State(state): State<AppState>) -> Html<String> {
                         <button style="flex:1; gap: 20p;" type="submit" formaction="/recipe_list/edit?id={}" formmethod="post">
                             Edit
                         </button>
-                        <button style="flex:1; gap: 20p;" type="submit" formaction="/recipe_list/delete?id={}" formmethod="post">
+                        <button style="flex:1; gap: 20p;" type="submit" formaction="/recipe_list/delete?id={}" formmethod="post" onclick="return confirm('Are you sure you want to delete this recipe?');">
                             Delete
                         </button>
                     </div>
@@ -272,6 +272,7 @@ async fn get_recipe_list(State(state): State<AppState>) -> Html<String> {
 
     list_page.push_str(r#"
             </ul>
+            <a href="/">Back Home...</a>
         </body>
     </html>
     "#);
@@ -359,3 +360,7 @@ async fn accept_recipe_delete(State(state): State<AppState>, Query(q): Query<IdQ
 
 
 
+/*
+TODO:
+- Home Knopf auf Recipe List
+*/
