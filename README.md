@@ -20,3 +20,8 @@ The website uses [axum](https://github.com/tokio-rs/axum) for the backend and ro
 The GUI uses [iced](https://github.com/iced-rs/iced).
 
 ## Current State
+- [ ] Backend of the Website
+- [ ] Prettying up the frontend
+- [ ] GUI
+- [ ] Connection to Bluetooth scales
+- [ ] Integrating everything
