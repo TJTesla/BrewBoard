@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            .button-row {
+                display: flex;
+                width: 100%;
+                gap: 10px;
+            }
+
+            .button-row button {
+                flex: 1;
+                padding: 10px;
+                font-size: 16px;
+            }
+
+            .bottom-space {
+                margin-bottom: 20px;
+            }
+
+            .modal-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+        }
+
+        button {
+            border: none;
+        }
+
+        h2 {
+            color: #515151;
+        }
+
+        .confirmation-message {
+            margin-bottom: 20px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .button {
+            padding: 10px 20px;
+            font-size: 16px;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .cancel-button {
+            background-color: #ccc;
+            color: #535353;
+        }
+
+        .delete-button {
+            background-color: #e74c3c;
+            color: #fff;
+        }
+        </style>
+    </head>
+    <body>
+        <h2>List of all brews in chronological order</h2>
+        <form action="/brew_list/filtered" method="get">
+            <label for="recipes">Filter for a specific recipe:</label>
+            <select id="recipes" name="recipe_filter">
+                <option value="1">Aeropress</option>
+                <option value="2">V60</option>
+                <option value="2473dfsdh">Switch</option>
+                <option value="4">Origami</option>
+            </select>
+            <button type="submit">Filter</button>
+        </form>
+        <ul>
+            <li class="bottom-space">
+                Brew from 23.03.2026, 12:00 using recipe Test22222267
+                <form>
+                    <div class="button-row">
+                        <button style="flex:1; gap: 20p;" type="submit" formaction="/brew_list/descr?id=2" formmethod="post">
+                            Description
+                        </button>
+                        <button style="flex:1; gap: 20p;" type="submit" formaction="/brew_list/delete?id=2" formmethod="post">
+                            Delete
+                        </button>
+                    </div>
+                </form>
+            </li>
+            <li class="bottom-space">
+                Brew from 21.03.2026, 12:00 using recipe wuiwewruw
+                <form>
+                    <div class="button-row">
+                        <button style="flex:1; gap: 20p;" type="submit" formaction="/brew_list/descr?id=2" formmethod="post">
+                            Description
+                        </button>
+                        <button style="flex:1; gap: 20p;" type="submit" formaction="/brew_list/delete?id=2" formmethod="post">
+                            Delete
+                        </button>
+                    </div>
+                </form>
+            </li>
+        </ul>
+    </body>
+</html>
