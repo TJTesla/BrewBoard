@@ -14,7 +14,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 sqlx = { version = "0.8", features = [ "runtime-tokio", "postgres", "time" ] }
 dotenvy = "0.15.7"
-time = { version="0.3", features = ["std", "formatting"] }
+time = { version="0.3", features = ["std", "formatting", "local-offset"] }
 
 [dev-dependencies]
 http-body-util = "0.1.3"
