@@ -22,6 +22,7 @@ The GUI uses [iced](https://github.com/iced-rs/iced).
 ## Current State
 - [x] Backend of the Website
 - [x] Prettying up the frontend
-- [ ] GUI
+- [ ] GUI Backend
+- [ ] GUI Frontend
 - [ ] Connection to Bluetooth scales
 - [ ] Integrating everything

@@ -1,83 +1,31 @@
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
-use time::OffsetDateTime;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use iced::{Element, Task};
-use iced::widget::{text, button, row};
+
+use crate::default_screen::DefaultScreenState;
 
 
-pub mod default_screen {
-    use iced::widget::Column;
+pub mod default_screen;
+pub mod settings_screen;
 
-    use super::*;
 
-    #[derive(Debug, Clone, Default)]
-    pub struct DefaultScreenState {
-        pub pool: Option<Arc<Pool<Postgres>>>,
-        pub old_brews: Vec<OldSettings>
-    }
+enum Message {
+    DefaultScreen(default_screen::DefaultScreenMessage),
+    SettingsScreen(settings_screen::SettingsScreenMessage),
 
-    #[derive(Debug, Clone)]
-    pub struct OldSettings {
-        pub brew_id: Option<i32>,
-        pub water_temp: Option<i32>,
-        pub grind_size: String,
-        pub coffee_weight: Option<i32>,
-        pub water_weight: Option<i32>,
-        pub notes: String,
-        pub recipe_id: Option<i32>,
-        pub timepoint: Option<OffsetDateTime>
-    }
-
-    impl OldSettings {
-        pub fn new() -> Self {
-            OldSettings { brew_id: None, water_temp: None, grind_size: "".to_string(), coffee_weight: None, water_weight: None, notes: "".to_string(), recipe_id: None, timepoint: None }
-        }
-    }
-
-    #[derive(Debug, Clone)]
-    pub enum DefaultScreenMessage {
-        ChoseBrew(OldSettings)
-    }
-
-    
-
-    impl DefaultScreenState {
-        pub fn update(&mut self, message: DefaultScreenMessage) -> OldSettings {
-            match message {
-                DefaultScreenMessage::ChoseBrew(brew) => brew
-            }
-        }
-
-        pub fn view(&self) -> Element<'_, DefaultScreenMessage> {
-            println!("Viewing, vec has size {}", self.old_brews.len());
-            let olds = Column::from_vec(
-                self.old_brews.iter().map(|brew| 
-                    button(text(format!("Brew with {}g of coffee", brew.coffee_weight.unwrap_or(0))))
-                        .on_press(DefaultScreenMessage::ChoseBrew(brew.clone()))
-                        .into()
-                ).collect()
-            );
-
-            let new = button(text("New Brew"))
-                .on_press(DefaultScreenMessage::ChoseBrew(OldSettings::new()));
-
-            row!(
-                olds, new
-            ).into()
-        }        
-    }
+    LoadDefaultScreen(Vec<default_screen::OldSettings>),
+    LoadedDBConnection((Arc<Pool<Postgres>>, Vec<default_screen::OldSettings>)),
+    FetchedRecipeNames(HashMap<i32, String>)
 }
-
 
 #[derive(Debug, Clone)]
 enum Screen {
     DefaultScreen(default_screen::DefaultScreenState),
-}
-
-impl Screen {
+    SettingsScreen(settings_screen::SettingsScreenState)
 }
 
 impl Default for Screen {
@@ -101,20 +49,33 @@ impl State {
                 pool: None,
                 screen: Screen::DefaultScreen(
                     default_screen::DefaultScreenState {
-                        pool: None,
                         old_brews: Vec::new()
                     }
                 )
             },
 
-            Task::perform(connect_db(), Message::Loaded)
+            Task::perform(connect_db(), Message::LoadedDBConnection)
         )
         
     }
 }
 
 
-async fn get_last_brews(pool: &Pool<Postgres>, number: i64) -> Vec<default_screen::OldSettings> {
+
+async fn connect_db() -> (Arc<Pool<Postgres>>, Vec<default_screen::OldSettings>) {
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect("postgresql://localhost:5432/brewboarddb")
+        .await
+        .unwrap();
+
+    let pool = Arc::new(pool);
+
+    let old_brews = get_last_brews(pool.clone(), 3).await;
+    (pool, old_brews)
+}
+
+async fn get_last_brews(pool: Arc<Pool<Postgres>>, number: i64) -> Vec<default_screen::OldSettings> {
     let data = sqlx::query!(
         "SELECT brew.id as brew_id, water_temp, grind_size, coffee_weight, water_weight, brew.notes as brew_notes, recipe.id as recipe_id, recipe.name as recipe_name, timepoint
         FROM brew
@@ -124,7 +85,7 @@ async fn get_last_brews(pool: &Pool<Postgres>, number: i64) -> Vec<default_scree
         LIMIT $1;",
         number
     )
-        .fetch_all(pool)
+        .fetch_all(&*pool)
         .await
         .unwrap();
 
@@ -138,61 +99,87 @@ async fn get_last_brews(pool: &Pool<Postgres>, number: i64) -> Vec<default_scree
             water_weight: Some(setting.water_weight),
             notes: setting.brew_notes.unwrap_or(String::new()),
             recipe_id: Some(setting.recipe_id),
+            recipe_name: setting.recipe_name,
             timepoint: Some(setting.timepoint)
         });
     }
 
-    println!("Getting last brews");
-
     old_settings
 }
 
-
-
-async fn connect_db() -> (Pool<Postgres>, Vec<default_screen::OldSettings>) {
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect("postgresql://localhost:5432/brewboarddb")
+async fn get_recipe_names(pool: Arc<Pool<Postgres>>) -> HashMap<i32, String> {
+    let data = sqlx::query!(
+        "SELECT id, name
+        FROM recipe;"
+    )
+        .fetch_all(pool.as_ref())
         .await
         .unwrap();
 
-    let old_brews = get_last_brews(&pool, 3).await;
-    (pool, old_brews)
+    data.into_iter().map(|row| (row.id, row.name)).collect()
 }
 
 
 
 
-enum Message {
-    DefaultScreen(default_screen::DefaultScreenMessage),
-    Loaded((Pool<Postgres>, Vec<default_screen::OldSettings>))
-}
 
-fn update(state: &mut State, message: Message) {
+fn update(state: &mut State, message: Message) -> Task<Message> {
     match message {
         Message::DefaultScreen(message) => {
             if let Screen::DefaultScreen(default) = &mut state.screen {
                 let res = default.update(message);
-                println!("{:?}", res);
+                
+                // Change to settings screen
+                state.screen = Screen::SettingsScreen(settings_screen::SettingsScreenState::new(res.water_temp, res.grind_size, res.coffee_weight, res.water_weight, res.recipe_id, res.recipe_name));
+                return Task::perform(get_recipe_names(state.pool.clone().unwrap()), Message::FetchedRecipeNames);
             }
+            Task::none()
         },
-        Message::Loaded((pool, old_settings)) => {
-            state.pool = Some(Arc::new(pool));
+        Message::SettingsScreen(message) => {
+            if let Screen::SettingsScreen(settings) = &mut state.screen {
+                let action = settings.update(message);
+
+                match action {
+                    settings_screen::Action::None => { return Task::none(); },
+                    settings_screen::Action::ReturnToDefault => {
+                        return Task::perform(get_last_brews(state.pool.clone().unwrap(), 3), Message::LoadDefaultScreen);
+                    },
+                    settings_screen::Action::MoveToBrew => {
+                        // TODO
+                        println!("{:?}", settings);
+                        return Task::none();
+                    }
+                }
+            }
+            Task::none()
+        },
+        Message::LoadDefaultScreen(old_brews) => {
+            state.screen = Screen::DefaultScreen(DefaultScreenState { old_brews });
+            Task::none()
+        }
+        Message::LoadedDBConnection((pool, old_settings)) => {
+            state.pool = Some(pool);
             if let Screen::DefaultScreen(default) = &mut state.screen {
                 default.old_brews = old_settings;
-                default.pool = state.pool.clone();
             }
+            Task::none()
+        },
+        Message::FetchedRecipeNames(names) => {
+            if let Screen::SettingsScreen(settings) = &mut state.screen {
+                settings.set_recipe_names(names);
+            }
+            Task::none()
         }
     }
 }
 
 fn view(state: &State) -> Element<'_, Message> {
     match &state.screen {
-        Screen::DefaultScreen(default) => default.view().map(Message::DefaultScreen)
+        Screen::DefaultScreen(default) => default.view().map(Message::DefaultScreen),
+        Screen::SettingsScreen(settings) => settings.view().map(Message::SettingsScreen)
     }
 }
 
-//#[tokio::main]
 fn main() -> iced::Result {
     iced::application(State::new, update, view).run()
 }
