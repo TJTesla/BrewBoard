@@ -26,3 +26,8 @@ The GUI uses [iced](https://github.com/iced-rs/iced).
 - [ ] GUI Frontend
 - [ ] Connection to Bluetooth scales
 - [ ] Integrating everything
+
+## Usage of LLMs
+
+For full disclosure I want to remark that I relied on the help of LLMs while developing the CSS part of the website.
+All other parts of the project, i.e. the website backend and the complete GUI application, have been developed without such methods.

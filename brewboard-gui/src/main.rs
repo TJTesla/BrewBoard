@@ -4,18 +4,22 @@ use sqlx::postgres::PgPoolOptions;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use iced::{Element, Task};
+use iced::{Element, Subscription, Task};
+use iced::time::{self, Duration};
 
+use crate::countdown_screen::CountdownScreenMessage;
 use crate::default_screen::DefaultScreenState;
 
 
 pub mod default_screen;
 pub mod settings_screen;
+pub mod countdown_screen;
 
 
 enum Message {
     DefaultScreen(default_screen::DefaultScreenMessage),
     SettingsScreen(settings_screen::SettingsScreenMessage),
+    CountdownScreen(countdown_screen::CountdownScreenMessage),
 
     LoadDefaultScreen(Vec<default_screen::OldSettings>),
     LoadedDBConnection((Arc<Pool<Postgres>>, Vec<default_screen::OldSettings>)),
@@ -25,7 +29,8 @@ enum Message {
 #[derive(Debug, Clone)]
 enum Screen {
     DefaultScreen(default_screen::DefaultScreenState),
-    SettingsScreen(settings_screen::SettingsScreenState)
+    SettingsScreen(settings_screen::SettingsScreenState),
+    CountdownScreen(countdown_screen::CountdownScreenState)
 }
 
 impl Default for Screen {
@@ -43,21 +48,13 @@ struct State {
 }
 
 impl State {
-    fn new() -> ( Self, Task<Message> ) {
-        (
-            State {
-                pool: None,
-                screen: Screen::DefaultScreen(
-                    default_screen::DefaultScreenState {
-                        old_brews: Vec::new()
-                    }
-                )
-            },
-
-            Task::perform(connect_db(), Message::LoadedDBConnection)
-        )
-        
-    }
+    fn new() -> ( Self, Task<Message> ) {(
+        State {
+            pool: None,
+            screen: Screen::DefaultScreen( default_screen::DefaultScreenState { old_brews: Vec::new() } )
+        },
+        Task::perform(connect_db(), Message::LoadedDBConnection)
+    )}
 }
 
 
@@ -144,15 +141,30 @@ fn update(state: &mut State, message: Message) -> Task<Message> {
                     settings_screen::Action::ReturnToDefault => {
                         return Task::perform(get_last_brews(state.pool.clone().unwrap(), 3), Message::LoadDefaultScreen);
                     },
-                    settings_screen::Action::MoveToBrew => {
+                    settings_screen::Action::MoveToCountdown => {
                         // TODO
-                        println!("{:?}", settings);
+                        state.screen = Screen::CountdownScreen(countdown_screen::CountdownScreenState::start_with(3));
                         return Task::none();
                     }
                 }
             }
             Task::none()
         },
+        Message::CountdownScreen(message) => {
+            if let Screen::CountdownScreen(countdown) = &mut state.screen {
+                let action = countdown.update(message);
+
+                match action {
+                    countdown_screen::Action::None => { return Task::none(); },
+                    countdown_screen::Action::MoveToBrew => {
+                        // TODO
+                        println!("GO GO GO");
+                        return Task::none();
+                    }
+                }
+            }
+            Task::none()
+        }
         Message::LoadDefaultScreen(old_brews) => {
             state.screen = Screen::DefaultScreen(DefaultScreenState { old_brews });
             Task::none()
@@ -176,10 +188,28 @@ fn update(state: &mut State, message: Message) -> Task<Message> {
 fn view(state: &State) -> Element<'_, Message> {
     match &state.screen {
         Screen::DefaultScreen(default) => default.view().map(Message::DefaultScreen),
-        Screen::SettingsScreen(settings) => settings.view().map(Message::SettingsScreen)
+        Screen::SettingsScreen(settings) => settings.view().map(Message::SettingsScreen),
+        Screen::CountdownScreen(countdown) => countdown.view().map(Message::CountdownScreen)
     }
 }
 
+
+fn subscription(state: &State) -> Subscription<Message> {
+    if let Screen::CountdownScreen(_) = state.screen {
+        Subscription::batch(vec![
+            time::every(Duration::from_secs(1)).map(|_| Message::CountdownScreen(CountdownScreenMessage::CountDown)),
+            time::every(Duration::from_millis(1)).map(|_| Message::CountdownScreen(CountdownScreenMessage::FillProgressBar))
+        ])
+    } else {
+        Subscription::none()
+    }
+
+} 
+
+
+
 fn main() -> iced::Result {
-    iced::application(State::new, update, view).run()
+    iced::application(State::new, update, view)
+        .subscription(subscription)
+        .run()
 }

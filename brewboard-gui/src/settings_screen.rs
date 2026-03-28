@@ -48,7 +48,7 @@ impl From<(i32, String)> for ChoosableRecipe {
 
 
 pub enum Action {
-    None, ReturnToDefault, MoveToBrew
+    None, ReturnToDefault, MoveToCountdown
 }
 
 
@@ -91,7 +91,7 @@ impl SettingsScreenState {
             SettingsScreenMessage::WaterWeightChange(num) => self.water_weight += num,
             SettingsScreenMessage::RecipeChosen(choosable) => self.recipe_id = Some(choosable),
             SettingsScreenMessage::RecipeStart => {
-                return Action::MoveToBrew;
+                return Action::MoveToCountdown;
             },
             SettingsScreenMessage::BackToDefault => {
                 return Action::ReturnToDefault;
