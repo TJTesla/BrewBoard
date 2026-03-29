@@ -22,10 +22,10 @@ The GUI uses [iced](https://github.com/iced-rs/iced).
 ## Current State
 - [x] Backend of the Website
 - [x] Prettying up the frontend
-- [ ] GUI Backend
+- [x] GUI Backend
 - [ ] GUI Frontend
 - [ ] Connection to Bluetooth scales
-- [ ] Integrating everything
+- [ ] Integrating the Bluetooth scales code with the GUI
 
 ## Usage of LLMs
 
